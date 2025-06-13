@@ -291,10 +291,10 @@ export function useKBCreation(
         setIndexedFolders(context.folderFiles);
       }
 
-      toast.success("Knowledge base created successfully!", {
-        autoClose: 3000,
-        toastId: "kb-creation-success",
-      });
+      // toast.success("Knowledge base created successfully!", {
+      //   autoClose: 3000,
+      //   toastId: "kb-creation-success",
+      // });
     },
     onError: (error, variables, context) => {
       console.error("❌ KB CREATION FAILED:", error);

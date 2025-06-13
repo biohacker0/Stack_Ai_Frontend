@@ -143,10 +143,10 @@ export function useDeleteQueue() {
 
         // Show summary toast
         if (results.success > 0) {
-          toast.success(`Successfully deleted ${results.success} file(s)${results.failed > 0 ? `. ${results.failed} failed.` : ""}`, {
-            autoClose: 3000,
-            toastId: "queue-processing-success",
-          });
+          // toast.success(`Successfully deleted ${results.success} file(s)${results.failed > 0 ? `. ${results.failed} failed.` : ""}`, {
+          //   autoClose: 3000,
+          //   toastId: "queue-processing-success",
+          // });
         }
       } finally {
         // Mark as not processing

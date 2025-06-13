@@ -54,10 +54,10 @@ export function useFileDeletion(
         }
       }
 
-      toast.success(`Successfully processed delete queue`, {
-        autoClose: 3000,
-        toastId: "queue-processing-success",
-      });
+      // toast.success(`Successfully processed delete queue`, {
+      //   autoClose: 3000,
+      //   toastId: "queue-processing-success",
+      // });
     } finally {
       setQueueProcessing(false);
     }
@@ -99,10 +99,10 @@ export function useFileDeletion(
         persistCacheToStorage(currentKB.id);
       }
 
-      toast.success(`Successfully deleted ${fileIds.length} file(s)`, {
-        autoClose: 3000,
-        toastId: "file-deletion-success",
-      });
+      // toast.success(`Successfully deleted ${fileIds.length} file(s)`, {
+      //   autoClose: 3000,
+      //   toastId: "file-deletion-success",
+      // });
     },
     onError: (error, variables, context) => {
       console.error("❌ DIRECT FILE DELETION FAILED:", error);
@@ -154,10 +154,10 @@ export function useFileDeletion(
           }
         });
 
-        toast.info(`Queued ${selectedIds.length} file(s) for deletion. They will be processed when sync completes.`, {
-          autoClose: 4000,
-          toastId: "files-queued-for-deletion",
-        });
+        // toast.info(`Queued ${selectedIds.length} file(s) for deletion. They will be processed when sync completes.`, {
+        //   autoClose: 4000,
+        //   toastId: "files-queued-for-deletion",
+        // });
       } else {
         // Execute deletion immediately
 

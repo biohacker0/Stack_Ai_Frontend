@@ -139,10 +139,10 @@ export function useOptimisticFileOperations() {
         data: initialKBResources,
       });
 
-      toast.success("Knowledge base created successfully!", {
-        autoClose: 3000,
-        toastId: "kb-creation-success",
-      });
+      // toast.success("Knowledge base created successfully!", {
+      //   autoClose: 3000,
+      //   toastId: "kb-creation-success",
+      // });
     },
   });
 
@@ -196,10 +196,10 @@ export function useOptimisticFileOperations() {
         queryClient.setQueryData(kbQueryKey, filteredKBData);
       }
 
-      toast.success(`Successfully deleted ${fileIds.length} file(s)`, {
-        autoClose: 3000,
-        toastId: "file-deletion-success",
-      });
+      // toast.success(`Successfully deleted ${fileIds.length} file(s)`, {
+      //   autoClose: 3000,
+      //   toastId: "file-deletion-success",
+      // });
     },
   });
 
