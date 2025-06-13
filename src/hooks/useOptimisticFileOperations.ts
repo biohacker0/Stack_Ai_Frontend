@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createKnowledgeBase, syncKnowledgeBase, deleteKBResource } from "@/lib/api/knowledgeBase";
 import { FileItem } from "@/lib/types/file";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 interface OptimisticFileState {
   id: string;
@@ -19,24 +19,24 @@ export function useOptimisticFileOperations() {
     (fileIds: string[], newStatus: FileItem["status"], isOptimistic: boolean = false) => {
       const rootQueryKey = ["drive-files", "root"];
       const currentData = queryClient.getQueryData<{ data: FileItem[] }>(rootQueryKey);
-      
+
       if (!currentData?.data) return null;
 
       const previousData = { ...currentData };
-      
+
       const updatedData = {
         ...currentData,
-        data: currentData.data.map(file => {
+        data: currentData.data.map((file) => {
           if (fileIds.includes(file.id)) {
             return {
               ...file,
               status: newStatus,
               // Store original status for rollback if this is optimistic
-              ...(isOptimistic && { originalStatus: file.status })
+              ...(isOptimistic && { originalStatus: file.status }),
             };
           }
           return file;
-        })
+        }),
       };
 
       queryClient.setQueryData(rootQueryKey, updatedData);
@@ -49,7 +49,7 @@ export function useOptimisticFileOperations() {
   const rollbackRootFileStatus = useCallback(
     (fileIds: string[], previousData: { data: FileItem[] } | null) => {
       if (!previousData) return;
-      
+
       const rootQueryKey = ["drive-files", "root"];
       queryClient.setQueryData(rootQueryKey, previousData);
     },
@@ -61,20 +61,20 @@ export function useOptimisticFileOperations() {
     (fileIds: string[]) => {
       const rootQueryKey = ["drive-files", "root"];
       const currentData = queryClient.getQueryData<{ data: FileItem[] }>(rootQueryKey);
-      
+
       if (!currentData?.data) return;
 
       const updatedData = {
         ...currentData,
-        data: currentData.data.map(file => {
+        data: currentData.data.map((file) => {
           if (fileIds.includes(file.id) && file.status === "pending") {
             return {
               ...file,
-              status: "indexed" as const
+              status: "indexed" as const,
             };
           }
           return file;
-        })
+        }),
       };
 
       queryClient.setQueryData(rootQueryKey, updatedData);
@@ -85,76 +85,63 @@ export function useOptimisticFileOperations() {
   // Optimistic KB creation mutation
   const createKBMutation = useMutation({
     mutationKey: ["createKB"],
-    mutationFn: async ({ 
-      resourceIds, 
-      files 
-    }: { 
-      resourceIds: string[]; 
-      files: FileItem[] 
-    }) => {
+    mutationFn: async ({ resourceIds, files }: { resourceIds: string[]; files: FileItem[] }) => {
       const kbData = {
         name: `Knowledge Base ${new Date().toLocaleString()}`,
         description: "Created from Google Drive files",
         resource_ids: resourceIds,
       };
 
-      console.log("Creating KB with data:", kbData);
       const kb = await createKnowledgeBase(kbData);
 
-      console.log("KB created, triggering sync:", kb.id);
       await syncKnowledgeBase(kb.id);
 
       return { kb, resourceIds };
     },
     onMutate: async ({ resourceIds }) => {
-      console.log("Optimistic KB creation: updating selected files to indexed");
-      
       // Cancel any outgoing refetches so they don't overwrite our optimistic update
       await queryClient.cancelQueries({ queryKey: ["drive-files", "root"] });
-      
+
       // Snapshot the previous value for rollback
       const previousData = updateRootFileStatus(resourceIds, "indexed", true);
-      
+
       return { previousData, resourceIds };
     },
     onError: (error, variables, context) => {
       console.error("KB creation failed, rolling back optimistic updates:", error);
-      
+
       if (context?.previousData) {
         rollbackRootFileStatus(context.resourceIds, context.previousData);
       }
-      
+
       toast.error("Failed to create knowledge base. Please try again.", {
         autoClose: 5000,
-        toastId: 'kb-creation-error'
+        toastId: "kb-creation-error",
       });
     },
     onSuccess: ({ kb, resourceIds }, { files }) => {
-      console.log("KB creation successful:", kb.id);
-      
       // Normalize any pending status to indexed (since we show pending as indexed)
       normalizeFileStatus(resourceIds);
-      
+
       // Populate KB resources cache with initial data for polling
-      const initialKBResources = resourceIds.map(id => {
-        const file = files.find(f => f.id === id);
+      const initialKBResources = resourceIds.map((id) => {
+        const file = files.find((f) => f.id === id);
         return {
           id,
           name: file?.name || "",
           type: "file" as const,
           status: "pending" as const,
-          indexed_at: new Date().toISOString()
+          indexed_at: new Date().toISOString(),
         };
       });
-      
-      queryClient.setQueryData(["kb-resources", kb.id], { 
-        data: initialKBResources 
+
+      queryClient.setQueryData(["kb-resources", kb.id], {
+        data: initialKBResources,
       });
-      console.log(`Populated KB resources cache with ${initialKBResources.length} files`);
-      
+
       toast.success("Knowledge base created successfully!", {
         autoClose: 3000,
-        toastId: 'kb-creation-success'
+        toastId: "kb-creation-success",
       });
     },
   });
@@ -162,20 +149,12 @@ export function useOptimisticFileOperations() {
   // Optimistic file deletion mutation
   const deleteFilesMutation = useMutation({
     mutationKey: ["deleteFiles"],
-    mutationFn: async ({ 
-      kbId, 
-      fileIds, 
-      files 
-    }: { 
-      kbId: string; 
-      fileIds: string[]; 
-      files: FileItem[] 
-    }) => {
+    mutationFn: async ({ kbId, fileIds, files }: { kbId: string; fileIds: string[]; files: FileItem[] }) => {
       // Delete each file (for root files, the resource_path is just the filename)
       const deletePromises = fileIds.map(async (fileId) => {
-        const file = files.find(f => f.id === fileId);  
+        const file = files.find((f) => f.id === fileId);
         if (!file) return;
-        
+
         const resourcePath = `/${file.name}`; // Root level files
         return deleteKBResource(kbId, resourcePath);
       });
@@ -184,47 +163,42 @@ export function useOptimisticFileOperations() {
       return { fileIds };
     },
     onMutate: async ({ fileIds }) => {
-      console.log("Optimistic file deletion: updating files to show '-' status");
-      
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ["drive-files", "root"] });
-      
+
       // Snapshot previous state and update to undefined status (shows as "-")
       const previousData = updateRootFileStatus(fileIds, undefined, true);
-      
+
       return { previousData, fileIds };
     },
     onError: (error, variables, context) => {
       console.error("File deletion failed, rolling back optimistic updates:", error);
-      
+
       if (context?.previousData) {
         rollbackRootFileStatus(context.fileIds, context.previousData);
       }
-      
+
       toast.error("Failed to delete files. Please try again.", {
         autoClose: 5000,
-        toastId: 'file-deletion-error'
+        toastId: "file-deletion-error",
       });
     },
     onSuccess: ({ fileIds }, { kbId }) => {
-      console.log("File deletion successful for files:", fileIds);
-      
       // Also remove from KB resources cache if it exists
       const kbQueryKey = ["kb-resources", kbId];
       const kbData = queryClient.getQueryData<{ data: FileItem[] }>(kbQueryKey);
-      
+
       if (kbData?.data) {
         const filteredKBData = {
           ...kbData,
-          data: kbData.data.filter(resource => !fileIds.includes(resource.id))
+          data: kbData.data.filter((resource) => !fileIds.includes(resource.id)),
         };
         queryClient.setQueryData(kbQueryKey, filteredKBData);
-        console.log(`Removed ${fileIds.length} files from KB resources cache`);
       }
-      
+
       toast.success(`Successfully deleted ${fileIds.length} file(s)`, {
         autoClose: 3000,
-        toastId: 'file-deletion-success'
+        toastId: "file-deletion-success",
       });
     },
   });
@@ -237,7 +211,6 @@ export function useOptimisticFileOperations() {
         return;
       }
 
-      console.log(`Creating KB optimistically with ${resourceIds.length} resources`);
       createKBMutation.mutate({ resourceIds, files });
     },
     [createKBMutation]
@@ -251,7 +224,6 @@ export function useOptimisticFileOperations() {
         return;
       }
 
-      console.log(`Deleting files optimistically: ${fileIds.length} files`);
       deleteFilesMutation.mutate({ kbId, fileIds, files });
     },
     [deleteFilesMutation]
@@ -266,14 +238,14 @@ export function useOptimisticFileOperations() {
     // Functions
     createKnowledgeBaseOptimistic,
     deleteFilesOptimistic,
-    
+
     // States
     isKBCreating: isKBCreating > 0,
     isFilesDeleting: isFilesDeleting > 0,
     isAnyMutating: isAnyMutating > 0,
-    
+
     // Raw mutations for advanced usage
     createKBMutation,
     deleteFilesMutation,
   };
-} 
+}

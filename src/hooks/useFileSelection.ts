@@ -17,24 +17,23 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
   useEffect(() => {
     if (!hasKB || !kbId) return;
 
-    setRowSelection(prev => {
+    setRowSelection((prev) => {
       const newSelection = { ...prev };
       let hasChanges = false;
 
-      Object.keys(prev).forEach(fileId => {
-        const file = files.find(f => f.id === fileId);
+      Object.keys(prev).forEach((fileId) => {
+        const file = files.find((f) => f.id === fileId);
         if (!file) return;
 
         // Use DataManager's resolveFileStatus for accurate status
         const folderPath = file.level && file.level > 0 ? getFolderPathFromFileName(file.name) : undefined;
         const resolvedStatus = resolveFileStatus(fileId, kbId, folderPath);
-        
+
         // If file is selected but no longer indexed/failed, deselect it
         const validStatuses = ["indexed", "error", "failed"];
         if (!validStatuses.includes(resolvedStatus || "")) {
           delete newSelection[fileId];
           hasChanges = true;
-          console.log(`Auto-deselected file ${fileId} (resolved status: ${resolvedStatus || 'undefined'})`);
         }
       });
 
@@ -43,34 +42,36 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
   }, [files, hasKB, kbId, resolveFileStatus, getFolderPathFromFileName]);
 
   // Helper to check if a file can be selected
-  const canSelectFile = useCallback((file: FileItem): boolean => {
-    if (!hasKB) {
-      // In create mode, all files and folders can be selected
-      return true;
-    }
-    
-    if (!kbId) return false; // No KB ID available
-    
-    // In delete mode (hasKB=true), only individual files with indexed/failed status can be selected
-    if (file.type === "directory") {
-      // Folders cannot be selected for deletion (API limitation)
-      return false;
-    }
-    
-    // Use DataManager's resolveFileStatus for accurate status resolution
-    const folderPath = file.level && file.level > 0 ? getFolderPathFromFileName(file.name) : undefined;
-    const resolvedStatus = resolveFileStatus(file.id, kbId, folderPath);
-    
-    // Only files with indexed or failed status can be selected for deletion
-    const canSelect = resolvedStatus === "indexed" || resolvedStatus === "error" || resolvedStatus === "failed";
-    
-    if (file.level === 0) {
-      // Debug root files
-      console.log(`Root file ${file.id}: statusMap has ${statusMap?.get(file.id)}, resolved: ${resolvedStatus}, canSelect: ${canSelect}`);
-    }
-    
-    return canSelect;
-  }, [hasKB, kbId, resolveFileStatus, getFolderPathFromFileName, statusMap]);
+  const canSelectFile = useCallback(
+    (file: FileItem): boolean => {
+      if (!hasKB) {
+        // In create mode, all files and folders can be selected
+        return true;
+      }
+
+      if (!kbId) return false; // No KB ID available
+
+      // In delete mode (hasKB=true), only individual files with indexed/failed status can be selected
+      if (file.type === "directory") {
+        // Folders cannot be selected for deletion (API limitation)
+        return false;
+      }
+
+      // Use DataManager's resolveFileStatus for accurate status resolution
+      const folderPath = file.level && file.level > 0 ? getFolderPathFromFileName(file.name) : undefined;
+      const resolvedStatus = resolveFileStatus(file.id, kbId, folderPath);
+
+      // Only files with indexed or failed status can be selected for deletion
+      const canSelect = resolvedStatus === "indexed" || resolvedStatus === "error" || resolvedStatus === "failed";
+
+      if (file.level === 0) {
+        // Debug root files
+      }
+
+      return canSelect;
+    },
+    [hasKB, kbId, resolveFileStatus, getFolderPathFromFileName, statusMap]
+  );
 
   // Build a map of parent-child relationships for efficient lookups
   const fileRelationships = useMemo(() => {
@@ -123,7 +124,6 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
 
       // Check if file can be selected
       if (isSelected && !canSelectFile(file)) {
-        console.log(`Cannot select file ${fileId} - not indexed in KB mode`);
         return;
       }
 
@@ -142,7 +142,7 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
           const descendantIds = getAllDescendantIds(fileId);
 
           descendantIds.forEach((id) => {
-            const descendantFile = files.find(f => f.id === id);
+            const descendantFile = files.find((f) => f.id === id);
             if (!descendantFile) return;
 
             if (isSelected && canSelectFile(descendantFile)) {
@@ -161,26 +161,29 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
   );
 
   // Handle select all functionality with status validation
-  const handleSelectAll = useCallback((isSelected: boolean, visibleRows: any[]) => {
-    const newSelection: Record<string, boolean> = {};
+  const handleSelectAll = useCallback(
+    (isSelected: boolean, visibleRows: any[]) => {
+      const newSelection: Record<string, boolean> = {};
 
-    if (isSelected) {
-      visibleRows.forEach((row) => {
-        const file = row.original;
-        if (canSelectFile(file)) {
-          newSelection[file.id] = true;
-        }
-      });
-    }
+      if (isSelected) {
+        visibleRows.forEach((row) => {
+          const file = row.original;
+          if (canSelectFile(file)) {
+            newSelection[file.id] = true;
+          }
+        });
+      }
 
-    setRowSelection(newSelection);
-  }, [canSelectFile]);
+      setRowSelection(newSelection);
+    },
+    [canSelectFile]
+  );
 
   // Get selected files (filtered by current status)
   const selectedFiles = useMemo(() => {
     return files.filter((file) => {
       if (!rowSelection[file.id]) return false;
-      
+
       // Double-check that selected files are still valid
       return canSelectFile(file);
     });
@@ -194,7 +197,6 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
   // Clear all selections
   const clearSelection = useCallback(() => {
     setRowSelection({});
-    console.log("🔄 Cleared all file selections");
   }, []);
 
   return {
@@ -207,4 +209,4 @@ export function useFileSelection({ files, statusMap, hasKB, kbId }: UseFileSelec
     clearSelection, // NEW: Function to clear all selections
     canSelectFile, // Expose for checkbox disable logic
   };
-} 
+}

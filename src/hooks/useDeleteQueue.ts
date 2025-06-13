@@ -2,7 +2,7 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo } from "react";
 import { deleteKBResource } from "@/lib/api/knowledgeBase";
 import { FileItem } from "@/lib/types/file";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 interface DeleteRequest {
   id: string;
@@ -41,10 +41,10 @@ export function useDeleteQueue() {
   const updateQueueData = useCallback(
     (updater: (prev: DeleteQueueData) => DeleteQueueData) => {
       const currentData = queryClient.getQueryData<DeleteQueueData>(DELETE_QUEUE_KEY) || queueData;
-      
+
       const newData = updater(currentData);
       queryClient.setQueryData(DELETE_QUEUE_KEY, newData);
-      
+
       return newData;
     },
     [queryClient, queueData]
@@ -68,7 +68,6 @@ export function useDeleteQueue() {
         lastUpdated: Date.now(),
       }));
 
-      console.log(`📝 Queued delete request: ${fileName} (${fileId})`);
       return deleteRequest.id;
     },
     [updateQueueData]
@@ -79,7 +78,7 @@ export function useDeleteQueue() {
     (requestId: string) => {
       updateQueueData((prev) => ({
         ...prev,
-        queue: prev.queue.filter(req => req.id !== requestId),
+        queue: prev.queue.filter((req) => req.id !== requestId),
         lastUpdated: Date.now(),
       }));
     },
@@ -87,24 +86,20 @@ export function useDeleteQueue() {
   );
 
   // Execute a single delete request
-  const executeDeleteRequest = useCallback(
-    async (request: DeleteRequest): Promise<boolean> => {
-      try {
-        console.log(`🗑️ Executing delete request: ${request.fileName}`);
-        await deleteKBResource(request.kbId, request.resourcePath);
-        console.log(`✅ Delete successful: ${request.fileName}`);
-        return true;
-      } catch (error) {
-        console.error(`❌ Delete failed: ${request.fileName}`, error);
-        toast.error(`Failed to delete ${request.fileName}. Please try again.`, {
-          autoClose: 5000,
-          toastId: `delete-error-${request.fileId}`,
-        });
-        return false;
-      }
-    },
-    []
-  );
+  const executeDeleteRequest = useCallback(async (request: DeleteRequest): Promise<boolean> => {
+    try {
+      await deleteKBResource(request.kbId, request.resourcePath);
+
+      return true;
+    } catch (error) {
+      console.error(`❌ Delete failed: ${request.fileName}`, error);
+      toast.error(`Failed to delete ${request.fileName}. Please try again.`, {
+        autoClose: 5000,
+        toastId: `delete-error-${request.fileId}`,
+      });
+      return false;
+    }
+  }, []);
 
   // Process entire queue sequentially
   const processQueue = useCallback(
@@ -112,8 +107,6 @@ export function useDeleteQueue() {
       if (!currentKbId || processing || queue.length === 0) {
         return;
       }
-
-      console.log(`🔄 Processing delete queue: ${queue.length} requests`);
 
       // Mark as processing
       updateQueueData((prev) => ({
@@ -129,12 +122,11 @@ export function useDeleteQueue() {
         for (const request of queue) {
           // Skip if request is for a different KB
           if (request.kbId !== currentKbId) {
-            console.log(`⏭️ Skipping delete request for different KB: ${request.fileName}`);
             continue;
           }
 
           const success = await executeDeleteRequest(request);
-          
+
           if (success) {
             results.success++;
             // Remove successful request from queue immediately
@@ -145,24 +137,17 @@ export function useDeleteQueue() {
 
           // Add delay between requests to avoid overwhelming server
           if (queue.indexOf(request) < queue.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
           }
         }
 
         // Show summary toast
         if (results.success > 0) {
-          toast.success(
-            `Successfully deleted ${results.success} file(s)${
-              results.failed > 0 ? `. ${results.failed} failed.` : ""
-            }`,
-            {
-              autoClose: 3000,
-              toastId: "queue-processing-success",
-            }
-          );
+          toast.success(`Successfully deleted ${results.success} file(s)${results.failed > 0 ? `. ${results.failed} failed.` : ""}`, {
+            autoClose: 3000,
+            toastId: "queue-processing-success",
+          });
         }
-
-        console.log(`📊 Queue processing complete: ${results.success} success, ${results.failed} failed`);
       } finally {
         // Mark as not processing
         updateQueueData((prev) => ({
@@ -180,14 +165,9 @@ export function useDeleteQueue() {
     (oldKbId: string, newKbId: string) => {
       updateQueueData((prev) => ({
         ...prev,
-        queue: prev.queue.map(request => 
-          request.kbId === oldKbId 
-            ? { ...request, kbId: newKbId }
-            : request
-        ),
+        queue: prev.queue.map((request) => (request.kbId === oldKbId ? { ...request, kbId: newKbId } : request)),
         lastUpdated: Date.now(),
       }));
-      console.log(`🔄 Updated queue KB ID: ${oldKbId} → ${newKbId}`);
     },
     [updateQueueData]
   );
@@ -199,15 +179,17 @@ export function useDeleteQueue() {
       processing: false,
       lastUpdated: Date.now(),
     }));
-    console.log("🧹 Delete queue cleared");
   }, [updateQueueData]);
 
   // Get queue stats
-  const queueStats = useMemo(() => ({
-    count: queue.length,
-    processing,
-    hasItems: queue.length > 0,
-  }), [queue.length, processing]);
+  const queueStats = useMemo(
+    () => ({
+      count: queue.length,
+      processing,
+      hasItems: queue.length > 0,
+    }),
+    [queue.length, processing]
+  );
 
   return {
     queue,
@@ -220,4 +202,4 @@ export function useDeleteQueue() {
     executeDeleteRequest,
     updateQueueKBId,
   };
-} 
+}

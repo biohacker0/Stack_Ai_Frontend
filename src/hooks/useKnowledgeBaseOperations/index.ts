@@ -9,7 +9,7 @@ import { useFileDeletion } from "./fileDeletion";
 
 export function useKnowledgeBaseOperations() {
   const queryClient = useQueryClient();
-  
+
   // Get state and all data manager functions
   const kbState = useKBState();
   const {
@@ -62,11 +62,7 @@ export function useKnowledgeBaseOperations() {
   } = kbState;
 
   // Get helpers
-  const { findAllFilesInSelectedFolders } = useKBHelpers(
-    getFolderContents,
-    getFolderPathFromFileName,
-    getAllDescendantFileIds
-  );
+  const { findAllFilesInSelectedFolders } = useKBHelpers(getFolderContents, getFolderPathFromFileName, getAllDescendantFileIds);
 
   // Get KB creation functionality
   const { createKBMutation } = useKBCreation(
@@ -107,31 +103,27 @@ export function useKnowledgeBaseOperations() {
         return;
       }
 
-      console.log(`🚀 Starting optimistic KB creation with ${resourceIds.length} files`);
       createKBMutation.mutate({ resourceIds, files });
     },
     [createKBMutation]
   );
 
   const createNewKB = useCallback(() => {
-    console.log("🔄 Creating new KB - clearing ALL state and cache");
-    
     // 1. Use comprehensive cleanup from DataManager (this handles everything)
     clearAllState();
-    
-    // 2. Clear KB from localStorage  
+
+    // 2. Clear KB from localStorage
     clearKBFromStorage();
-    
+
     // 3. Clear ALL React Query caches to ensure clean state
     queryClient.clear();
-    console.log("🗑️ Cleared all React Query caches");
-    
+
     // 4. Reset component state
     setCurrentKB(null);
     setIndexedFolders([]);
-    
+
     // 5. Force page reload to ensure completely clean state
-    console.log("🔄 Reloading page for clean state");
+
     window.location.reload();
   }, [clearAllState, queryClient, setCurrentKB, setIndexedFolders]);
 
@@ -161,4 +153,4 @@ export function useKnowledgeBaseOperations() {
     queueCount,
     queueHasItems,
   };
-} 
+}

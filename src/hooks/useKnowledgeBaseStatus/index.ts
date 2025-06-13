@@ -14,24 +14,12 @@ interface UseKnowledgeBaseStatusProps {
   indexedFolders?: Array<{ folderPath: string; fileIds: string[] }>;
 }
 
-export function useKnowledgeBaseStatus({ 
-  kbId, 
-  enabled = true, 
-  indexedFolders = [] 
-}: UseKnowledgeBaseStatusProps) {
-  
+export function useKnowledgeBaseStatus({ kbId, enabled = true, indexedFolders = [] }: UseKnowledgeBaseStatusProps) {
   // Initialize polling state
-  const {
-    shouldPoll,
-    shouldEnablePolling,
-    hasShownErrorToast,
-    setHasShownErrorToast,
-    pollingStartTime,
-    isTemporaryKB,
-    checkPollingTimeout,
-    stopPolling,
-    resetErrorToast,
-  } = usePollingState({ kbId, enabled });
+  const { shouldPoll, shouldEnablePolling, hasShownErrorToast, setHasShownErrorToast, pollingStartTime, isTemporaryKB, checkPollingTimeout, stopPolling, resetErrorToast } = usePollingState({
+    kbId,
+    enabled,
+  });
 
   // Poll KB resources (root level)
   const {
@@ -49,11 +37,7 @@ export function useKnowledgeBaseStatus({
   });
 
   // Initialize folder polling
-  const {
-    folderPollingStatus,
-    isFolderPollingActive,
-    pollFolderStatus,
-  } = useFolderPolling({
+  const { folderPollingStatus, isFolderPollingActive, pollFolderStatus } = useFolderPolling({
     kbId,
     shouldEnablePolling,
     indexedFolders,
@@ -62,13 +46,7 @@ export function useKnowledgeBaseStatus({
   });
 
   // Initialize status filtering and mapping
-  const {
-    filteredKbResources,
-    statusMap,
-    statusCounts,
-    allFilesSettled,
-    checkUnsettledFiles,
-  } = useStatusFiltering({
+  const { filteredKbResources, statusMap, statusCounts, allFilesSettled, checkUnsettledFiles } = useStatusFiltering({
     kbResources: kbResources || null,
     folderPollingStatus,
     hasShownErrorToast,
@@ -114,20 +92,10 @@ export function useKnowledgeBaseStatus({
 
     // Continue polling
     if (hasUnsettledFiles) {
-      console.log("Root files still pending, continuing polling...");
     }
     if (isFolderPollingActive) {
-      console.log("Folder polling still active, continuing polling...");
     }
-  }, [
-    filteredKbResources, 
-    checkPollingTimeout, 
-    enabled, 
-    kbId, 
-    isFolderPollingActive,
-    checkUnsettledFiles,
-    stopPolling
-  ]);
+  }, [filteredKbResources, checkPollingTimeout, enabled, kbId, isFolderPollingActive, checkUnsettledFiles, stopPolling]);
 
   return {
     kbResources: filteredKbResources?.data || [],
@@ -140,4 +108,4 @@ export function useKnowledgeBaseStatus({
     shouldPoll, // Expose for debugging
     folderPollingStatus, // Expose folder polling status
   };
-} 
+}

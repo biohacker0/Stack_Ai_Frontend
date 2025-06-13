@@ -14,7 +14,7 @@ export function usePollingState({ kbId, enabled = true }: UsePollingStateProps) 
   const [hasShownErrorToast, setHasShownErrorToast] = useState(false);
 
   // Don't poll for temporary/optimistic KB IDs
-  const isTemporaryKB = kbId?.startsWith('temp-') || false;
+  const isTemporaryKB = kbId?.startsWith("temp-") || false;
   const shouldEnablePolling = enabled && !!kbId && !isTemporaryKB && shouldPoll;
 
   // Reset polling when KB changes
@@ -29,7 +29,6 @@ export function usePollingState({ kbId, enabled = true }: UsePollingStateProps) 
   const checkPollingTimeout = useCallback(() => {
     const pollingDuration = Date.now() - pollingStartTime;
     if (pollingDuration > MAX_POLL_DURATION) {
-      console.log("Polling timeout reached, stopping polling");
       setShouldPoll(false);
       return true;
     }
@@ -38,7 +37,6 @@ export function usePollingState({ kbId, enabled = true }: UsePollingStateProps) 
 
   // Stop polling
   const stopPolling = useCallback((reason: string) => {
-    console.log(`Stopping polling: ${reason}`);
     setShouldPoll(false);
   }, []);
 
@@ -58,4 +56,4 @@ export function usePollingState({ kbId, enabled = true }: UsePollingStateProps) 
     stopPolling,
     resetErrorToast,
   };
-} 
+}

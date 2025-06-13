@@ -36,9 +36,8 @@ export function useSyncState() {
         kbId: kbId || currentData.kbId,
         lastUpdated: Date.now(),
       };
-      
+
       queryClient.setQueryData(SYNC_STATE_KEY, newData);
-      console.log(`🔄 Sync state updated: ${newState} (KB: ${newData.kbId})`);
     },
     [queryClient, syncStateData]
   );
@@ -77,4 +76,4 @@ export function useSyncState() {
     setSyncPending,
     setSyncCompleted,
   };
-} 
+}

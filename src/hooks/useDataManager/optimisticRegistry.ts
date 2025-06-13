@@ -2,19 +2,13 @@ import { useCallback, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { FileItem } from "@/lib/types/file";
 import { useOptimisticFolderRegistry } from "../useOptimisticFolderRegistry";
-import { 
-  OPTIMISTIC_DELETE_REGISTRY_KEY,
-  OPTIMISTIC_UPDATE_COUNTER_KEY,
-  OptimisticDeleteRegistryData 
-} from "./types";
+import { OPTIMISTIC_DELETE_REGISTRY_KEY, OPTIMISTIC_UPDATE_COUNTER_KEY, OptimisticDeleteRegistryData } from "./types";
 
 export function useOptimisticRegistry() {
   const queryClient = useQueryClient();
 
   // Import optimistic folder registry
-  const {
-    isDescendantOfOptimisticFolder,
-  } = useOptimisticFolderRegistry();
+  const { isDescendantOfOptimisticFolder } = useOptimisticFolderRegistry();
 
   const { data: registryData } = useQuery({
     queryKey: OPTIMISTIC_DELETE_REGISTRY_KEY,
@@ -46,7 +40,7 @@ export function useOptimisticRegistry() {
       const currentData = queryClient.getQueryData<{ count: number; lastUpdated: number }>(OPTIMISTIC_UPDATE_COUNTER_KEY) || optimisticUpdateCounter;
       const newData = {
         count: currentData.count + 1,
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
       };
       queryClient.setQueryData(OPTIMISTIC_UPDATE_COUNTER_KEY, newData);
       // console.log(`🔄 [DataManager] Optimistic update counter incremented: ${newData.count}`);
@@ -57,7 +51,7 @@ export function useOptimisticRegistry() {
    * File Status Precedence (highest to lowest):
    * 1. Optimistic Delete Registry (locked as "-")
    * 2. KB Resources Cache (root files - from network)
-   * 3. Folder Status Cache (folder files - from network) 
+   * 3. Folder Status Cache (folder files - from network)
    * 4. Optimistic Folder Registry (descendant of optimistically indexed folder)
    * 5. Default (undefined)
    */
@@ -79,7 +73,7 @@ export function useOptimisticRegistry() {
       // 2. Check KB resources cache (root files)
       if (kbId) {
         const kbResources = queryClient.getQueryData<{ data: FileItem[] }>(["kb-resources", kbId]);
-        const resource = kbResources?.data?.find(r => r.id === fileId);
+        const resource = kbResources?.data?.find((r) => r.id === fileId);
         if (resource) {
           // Apply optimistic UI: show "pending" as "indexed"
           const status = resource.status === "pending" ? "indexed" : resource.status;
@@ -91,7 +85,7 @@ export function useOptimisticRegistry() {
       // 3. Check folder status cache (folder files)
       if (kbId && folderPath) {
         const folderStatus = queryClient.getQueryData<{ data: FileItem[] }>(["kb-file-status", kbId, folderPath]);
-        const folderFile = folderStatus?.data?.find(r => r.id === fileId);
+        const folderFile = folderStatus?.data?.find((r) => r.id === fileId);
         if (folderFile) {
           // Apply optimistic UI: show "pending" as "indexed"
           const status = folderFile.status === "pending" ? "indexed" : folderFile.status;
@@ -102,7 +96,6 @@ export function useOptimisticRegistry() {
 
       // 4. Check optimistic folder registry (new priority level)
       if (kbId && folderPath && isDescendantOfOptimisticFolder(kbId, folderPath)) {
-        console.log(`🌳 [DataManager] File ${fileId} is descendant of optimistic folder: ${folderPath}`);
         statusCacheRef.current.set(cacheKey, "indexed");
         return "indexed"; // Show as optimistically indexed
       }
@@ -131,4 +124,4 @@ export function useOptimisticRegistry() {
     incrementOptimisticUpdateCounter,
     resolveFileStatus,
   };
-} 
+}

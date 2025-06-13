@@ -36,25 +36,14 @@ export function useFileTree({ kbId, isCreatingKB }: UseFileTreeProps = {}) {
   } = useTreeState();
 
   // Initialize status polling functionality
-  const {
-    fetchKBStatusForFolder,
-    updateCachedFilesWithStatus,
-    pollFolderStatus,
-  } = useStatusPolling({
+  const { fetchKBStatusForFolder, updateCachedFilesWithStatus, pollFolderStatus } = useStatusPolling({
     kbId,
     errorToastShown,
     setErrorToastShown,
   });
 
   // Initialize folder operations
-  const {
-    toggleFolder,
-    getFolderPath,
-    startPrefetch,
-    stopPrefetch,
-    registerFolder,
-    isPrefetching,
-  } = useFolderOperations({
+  const { toggleFolder, getFolderPath, startPrefetch, stopPrefetch, registerFolder, isPrefetching } = useFolderOperations({
     kbId,
     isCreatingKB,
     expandedFolders,
@@ -92,24 +81,21 @@ export function useFileTree({ kbId, isCreatingKB }: UseFileTreeProps = {}) {
     // When KB creation completes (isCreatingKB changes from true to false)
     // Start polling for any folders that were expanded during creation
     if (!isCreatingKB && kbId && delayedPollingFolders.size > 0) {
-      console.log(`🚀 KB creation completed, starting delayed polling for ${delayedPollingFolders.size} folders`);
-      
-      delayedPollingFolders.forEach(folderId => {
+      delayedPollingFolders.forEach((folderId) => {
         // Get folder data to extract path
         const folderData = queryClient.getQueryData<{ data: any[] }>(["drive-files", folderId]);
         if (folderData?.data && folderData.data.length > 0) {
           const folderPath = getFolderPath(folderData.data);
-          
+
           // Check if this folder should have optimistic updates
           if (isDescendantOfOptimisticFolder(kbId, folderPath)) {
-            console.log(`🔄 Starting delayed polling for optimistic folder: ${folderPath}`);
             setTimeout(() => {
               pollFolderStatus(folderPath, folderId);
             }, 1000); // Small delay to let things settle
           }
         }
       });
-      
+
       // Clear the delayed polling set
       setDelayedPollingFolders(new Set());
     }
@@ -131,4 +117,4 @@ export function useFileTree({ kbId, isCreatingKB }: UseFileTreeProps = {}) {
     // Force refresh for optimistic updates
     forceRefresh,
   };
-} 
+}

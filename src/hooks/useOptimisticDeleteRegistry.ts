@@ -34,10 +34,10 @@ export function useOptimisticDeleteRegistry() {
         entries: {},
         lastUpdated: Date.now(),
       };
-      
+
       const newData = updater(currentData);
       queryClient.setQueryData(OPTIMISTIC_DELETE_REGISTRY_KEY, newData);
-      
+
       return newData;
     },
     [queryClient]
@@ -62,8 +62,6 @@ export function useOptimisticDeleteRegistry() {
         },
         lastUpdated: Date.now(),
       }));
-
-      console.log(`🔒 Marked file as optimistically deleted: ${fileName} (${fileId})`);
     },
     [updateRegistryData]
   );
@@ -74,15 +72,13 @@ export function useOptimisticDeleteRegistry() {
       updateRegistryData((prev) => {
         const newEntries = { ...prev.entries };
         delete newEntries[fileId];
-        
+
         return {
           ...prev,
           entries: newEntries,
           lastUpdated: Date.now(),
         };
       });
-
-      console.log(`🔓 Removed file from optimistic delete registry: ${fileId}`);
     },
     [updateRegistryData]
   );
@@ -118,7 +114,6 @@ export function useOptimisticDeleteRegistry() {
       entries: {},
       lastUpdated: Date.now(),
     }));
-    console.log("🧹 Optimistic delete registry cleared");
   }, [updateRegistryData]);
 
   // Get registry stats
@@ -126,7 +121,7 @@ export function useOptimisticDeleteRegistry() {
     const entryValues = Object.values(entries);
     return {
       count: entryValues.length,
-      lockedCount: entryValues.filter(entry => entry.locked).length,
+      lockedCount: entryValues.filter((entry) => entry.locked).length,
       hasEntries: entryValues.length > 0,
       fileIds: Object.keys(entries),
     };
@@ -135,7 +130,7 @@ export function useOptimisticDeleteRegistry() {
   // Filter out deleted files from polling responses
   const filterPollingResponse = useCallback(
     <T extends { id: string }>(items: T[]): T[] => {
-      return items.filter(item => !isFileMarkedAsDeleted(item.id));
+      return items.filter((item) => !isFileMarkedAsDeleted(item.id));
     },
     [isFileMarkedAsDeleted]
   );
@@ -163,4 +158,4 @@ export function useOptimisticDeleteRegistry() {
     filterPollingResponse,
     getFileStatusOverride,
   };
-} 
+}

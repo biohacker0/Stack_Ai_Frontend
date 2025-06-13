@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { FileItem } from "@/lib/types/file";
 import { useOptimisticDeleteRegistry } from "../useOptimisticDeleteRegistry";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 interface UseStatusFilteringProps {
   kbResources: { data: any[] } | null;
@@ -10,30 +10,20 @@ interface UseStatusFilteringProps {
   setHasShownErrorToast: (value: boolean) => void;
 }
 
-export function useStatusFiltering({
-  kbResources,
-  folderPollingStatus,
-  hasShownErrorToast,
-  setHasShownErrorToast,
-}: UseStatusFilteringProps) {
+export function useStatusFiltering({ kbResources, folderPollingStatus, hasShownErrorToast, setHasShownErrorToast }: UseStatusFilteringProps) {
   // Get optimistic delete registry
-  const { 
-    filterPollingResponse, 
-    getFileStatusOverride
-  } = useOptimisticDeleteRegistry();
+  const { filterPollingResponse, getFileStatusOverride } = useOptimisticDeleteRegistry();
 
   // Filter polling data to exclude optimistically deleted files
   const filteredKbResources = useMemo(() => {
     if (!kbResources?.data) return null;
-    
+
     // Filter out files that are marked as optimistically deleted
     const filteredData = filterPollingResponse(kbResources.data);
-    
-    console.log(`Filtered KB resources: ${kbResources.data.length} -> ${filteredData.length} (${kbResources.data.length - filteredData.length} optimistically deleted)`);
-    
+
     return {
       ...kbResources,
-      data: filteredData
+      data: filteredData,
     };
   }, [kbResources, filterPollingResponse]);
 
@@ -43,38 +33,30 @@ export function useStatusFiltering({
   // OPTIMISTIC UI: Treat "pending" as "indexed" so users see instant feedback
   const statusMap = useMemo(() => {
     const map = new Map<string, string>();
-    
+
     if (filteredKbResources?.data) {
-      console.log(`Building status map from ${filteredKbResources.data.length} filtered KB resources`);
-      console.log('Filtered KB Resources:', filteredKbResources.data.map((r: any) => ({ id: r.id, name: r.name, status: r.status })));
-      
       filteredKbResources.data.forEach((resource: any) => {
         let displayStatus: FileItem["status"] = resource.status || "unknown";
-        
+
         // Check if this file has a status override (e.g., optimistically deleted)
         const override = getFileStatusOverride(resource.id);
         if (override && override !== null) {
           // Override is "-" for deleted files, which we'll treat as undefined status
           displayStatus = undefined; // Show as "-" in UI
-          console.log(`Status map (override): ${resource.id} (${resource.name}) -> ${resource.status} -> deleted`);
         } else {
           // OPTIMISTIC UI: Show "pending" as "indexed" to match optimistic updates
           // Only revert to error if it actually fails
           if (displayStatus === "pending") {
             displayStatus = "indexed";
-            console.log(`Status map (optimistic): ${resource.id} (${resource.name}) -> pending -> indexed`);
           } else {
-            console.log(`Status map: ${resource.id} (${resource.name}) -> ${displayStatus}`);
           }
         }
-        
+
         map.set(resource.id, displayStatus || "unknown");
       });
     } else {
-      console.log('No filtered KB resources data available for status map');
     }
-    
-    console.log(`Final status map has ${map.size} entries`);
+
     return map;
   }, [filteredKbResources?.data, getFileStatusOverride]);
 
@@ -85,14 +67,13 @@ export function useStatusFiltering({
     const files = filteredKbResources.data.filter((item: any) => item.type === "file");
     if (files.length === 0) return true; // No files means settled
 
-    const rootFilesSettled = files.every((file: any) => 
-      file.status === "indexed" || 
-      file.status === "error"
+    const rootFilesSettled = files.every(
+      (file: any) => file.status === "indexed" || file.status === "error"
       // Note: we don't include pending_delete here because that means deletion is in progress
     );
 
     // Also check if folder polling is complete
-    const folderPollingComplete = Array.from(folderPollingStatus.values()).every(isActive => !isActive);
+    const folderPollingComplete = Array.from(folderPollingStatus.values()).every((isActive) => !isActive);
 
     return rootFilesSettled && folderPollingComplete;
   }, [filteredKbResources?.data, folderPollingStatus]);
@@ -129,28 +110,23 @@ export function useStatusFiltering({
     const pendingDeleteFiles = files.filter((file: any) => file.status === "pending_delete");
     const errorFiles = files.filter((file: any) => file.status === "error");
 
-    console.log(`Root polling status: ${pendingFiles.length} pending, ${pendingDeleteFiles.length} pending_delete, ${errorFiles.length} error`);
-
     // Show error toast if not already shown
     if (errorFiles.length > 0 && !hasShownErrorToast) {
       setHasShownErrorToast(true);
-      toast.error(
-        `Failed to index ${errorFiles.length} file(s). The knowledge base may be corrupted. Please create a new knowledge base.`,
-        {
-          autoClose: 8000,
-          toastId: 'kb-error-toast' // Prevent duplicate toasts
-        }
-      );
+      toast.error(`Failed to index ${errorFiles.length} file(s). The knowledge base may be corrupted. Please create a new knowledge base.`, {
+        autoClose: 8000,
+        toastId: "kb-error-toast", // Prevent duplicate toasts
+      });
     }
 
     const hasUnsettledFiles = pendingFiles.length > 0 || pendingDeleteFiles.length > 0;
 
-    return { 
-      hasUnsettledFiles, 
-      files, 
-      pendingFiles, 
-      pendingDeleteFiles, 
-      errorFiles 
+    return {
+      hasUnsettledFiles,
+      files,
+      pendingFiles,
+      pendingDeleteFiles,
+      errorFiles,
     };
   }, [filteredKbResources?.data, hasShownErrorToast, setHasShownErrorToast]);
 
@@ -161,4 +137,4 @@ export function useStatusFiltering({
     allFilesSettled,
     checkUnsettledFiles,
   };
-} 
+}

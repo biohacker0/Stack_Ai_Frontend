@@ -1,10 +1,6 @@
 import { useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { 
-  SYNC_STATE_KEY,
-  SyncState,
-  SyncStateData 
-} from "./types";
+import { SYNC_STATE_KEY, SyncState, SyncStateData } from "./types";
 
 export function useSyncState() {
   const queryClient = useQueryClient();
@@ -24,9 +20,8 @@ export function useSyncState() {
         kbId: kbId || currentData.kbId,
         lastUpdated: Date.now(),
       };
-      
+
       queryClient.setQueryData(SYNC_STATE_KEY, newData);
-      console.log(`🔄 [DataManager] Sync state: ${newState} (KB: ${newData.kbId})`);
     },
     [queryClient, syncStateData]
   );
@@ -35,4 +30,4 @@ export function useSyncState() {
     syncStateData,
     updateSyncState,
   };
-} 
+}

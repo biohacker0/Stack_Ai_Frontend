@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { listKBResourcesSafe } from "@/lib/api/knowledgeBase";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
 // Constants
 const POLL_INTERVAL = 1000; // 1 second for faster updates
@@ -14,122 +14,108 @@ interface UseFolderPollingProps {
   setHasShownErrorToast: (value: boolean) => void;
 }
 
-export function useFolderPolling({
-  kbId,
-  shouldEnablePolling,
-  indexedFolders,
-  hasShownErrorToast,
-  setHasShownErrorToast,
-}: UseFolderPollingProps) {
+export function useFolderPolling({ kbId, shouldEnablePolling, indexedFolders, hasShownErrorToast, setHasShownErrorToast }: UseFolderPollingProps) {
   const queryClient = useQueryClient();
   const [folderPollingStatus, setFolderPollingStatus] = useState<Map<string, boolean>>(new Map());
 
   // Poll folder status for indexed folders
-  const pollFolderStatus = useCallback(async (folderPath: string, expectedFileIds: string[]) => {
-    if (!kbId || !shouldEnablePolling) return;
+  const pollFolderStatus = useCallback(
+    async (folderPath: string, expectedFileIds: string[]) => {
+      if (!kbId || !shouldEnablePolling) return;
 
-    try {
-      console.log(`🔄 Polling folder status: ${folderPath} (expecting ${expectedFileIds.length} files)`);
-      
-      // Fetch current status for this folder
-      const folderData = await listKBResourcesSafe(kbId, folderPath);
-      const folderFiles = folderData?.data || [];
-      
-      console.log(`📊 Folder ${folderPath} status:`, folderFiles.map(f => ({ id: f.id, name: f.name, status: f.status })));
-      
-      // Update folder status cache
-      queryClient.setQueryData(["kb-file-status", kbId, folderPath], { data: folderFiles });
-      
-      // Check if all expected files are settled
-      let hasPending = false;
-      let hasErrors = false;
-      
-      expectedFileIds.forEach(fileId => {
-        const file = folderFiles.find(f => f.id === fileId);
-        if (file) {
-          if (file.status === "pending") {
-            hasPending = true;
-          } else if (file.status === "error" || file.status === "failed") {
-            hasErrors = true;
-            console.log(`❌ File ${file.name} failed to index in folder ${folderPath}`);
-          } else if (file.status === "indexed") {
-            console.log(`✅ File ${file.name} successfully indexed in folder ${folderPath}`);
-          }
-        } else {
-          // File not found in KB response - might be failed or not indexed
-          console.log(`⚠️ File ${fileId} not found in KB response for folder ${folderPath}`);
-        }
-      });
-      
-      // Show error toast for failed files in this folder
-      if (hasErrors && !hasShownErrorToast) {
-        const failedFiles = expectedFileIds.filter(fileId => {
-          const file = folderFiles.find(f => f.id === fileId);
-          return file && (file.status === "error" || file.status === "failed");
-        });
-        
-        if (failedFiles.length > 0) {
-          setHasShownErrorToast(true);
-          toast.error(
-            `Failed to index ${failedFiles.length} file(s) in folder ${folderPath}. Please try creating a new knowledge base.`,
-            {
-              autoClose: 8000,
-              toastId: `folder-error-${folderPath}`
+      try {
+        // Fetch current status for this folder
+        const folderData = await listKBResourcesSafe(kbId, folderPath);
+        const folderFiles = folderData?.data || [];
+
+        // Update folder status cache
+        queryClient.setQueryData(["kb-file-status", kbId, folderPath], { data: folderFiles });
+
+        // Check if all expected files are settled
+        let hasPending = false;
+        let hasErrors = false;
+
+        expectedFileIds.forEach((fileId) => {
+          const file = folderFiles.find((f) => f.id === fileId);
+          if (file) {
+            if (file.status === "pending") {
+              hasPending = true;
+            } else if (file.status === "error" || file.status === "failed") {
+              hasErrors = true;
+            } else if (file.status === "indexed") {
             }
-          );
+          } else {
+            // File not found in KB response - might be failed or not indexed
+          }
+        });
+
+        // Show error toast for failed files in this folder
+        if (hasErrors && !hasShownErrorToast) {
+          const failedFiles = expectedFileIds.filter((fileId) => {
+            const file = folderFiles.find((f) => f.id === fileId);
+            return file && (file.status === "error" || file.status === "failed");
+          });
+
+          if (failedFiles.length > 0) {
+            setHasShownErrorToast(true);
+            toast.error(`Failed to index ${failedFiles.length} file(s) in folder ${folderPath}. Please try creating a new knowledge base.`, {
+              autoClose: 8000,
+              toastId: `folder-error-${folderPath}`,
+            });
+          }
         }
-      }
-      
-      // Continue polling if there are still pending files
-      if (hasPending) {
-        console.log(`🔄 Continuing to poll folder ${folderPath} (${expectedFileIds.filter(id => {
-          const file = folderFiles.find(f => f.id === id);
-          return file && file.status === "pending";
-        }).length} files still pending)`);
-        
-        setTimeout(() => pollFolderStatus(folderPath, expectedFileIds), POLL_INTERVAL);
-      } else {
-        console.log(`✅ Folder polling completed for ${folderPath}`);
-        setFolderPollingStatus(prev => {
+
+        // Continue polling if there are still pending files
+        if (hasPending) {
+          console.log(
+            `🔄 Continuing to poll folder ${folderPath} (${
+              expectedFileIds.filter((id) => {
+                const file = folderFiles.find((f) => f.id === id);
+                return file && file.status === "pending";
+              }).length
+            } files still pending)`
+          );
+
+          setTimeout(() => pollFolderStatus(folderPath, expectedFileIds), POLL_INTERVAL);
+        } else {
+          setFolderPollingStatus((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(folderPath, false); // Mark as done
+            return newMap;
+          });
+        }
+      } catch (error) {
+        console.error(`❌ Error polling folder ${folderPath}:`, error);
+        // Stop polling this folder on error
+        setFolderPollingStatus((prev) => {
           const newMap = new Map(prev);
-          newMap.set(folderPath, false); // Mark as done
+          newMap.set(folderPath, false);
           return newMap;
         });
       }
-      
-    } catch (error) {
-      console.error(`❌ Error polling folder ${folderPath}:`, error);
-      // Stop polling this folder on error
-      setFolderPollingStatus(prev => {
-        const newMap = new Map(prev);
-        newMap.set(folderPath, false);
-        return newMap;
-      });
-    }
-  }, [kbId, shouldEnablePolling, queryClient, hasShownErrorToast, setHasShownErrorToast]);
+    },
+    [kbId, shouldEnablePolling, queryClient, hasShownErrorToast, setHasShownErrorToast]
+  );
 
   // Start folder polling when indexedFolders change
   useEffect(() => {
     if (!shouldEnablePolling || !kbId || indexedFolders.length === 0) return;
 
-    console.log(`🚀 Starting folder polling for ${indexedFolders.length} folders`);
-    
     // Reset folder polling status
     const newPollingStatus = new Map<string, boolean>();
-    
+
     // Start polling for each indexed folder
     indexedFolders.forEach(({ folderPath, fileIds }) => {
       if (fileIds.length > 0) {
         newPollingStatus.set(folderPath, true);
-        console.log(`📁 Starting polling for folder: ${folderPath} (${fileIds.length} files)`);
-        
+
         // Start polling with a slight delay to avoid overwhelming the API
         setTimeout(() => {
           pollFolderStatus(folderPath, fileIds);
         }, 500);
       }
     });
-    
+
     setFolderPollingStatus(newPollingStatus);
   }, [indexedFolders, shouldEnablePolling, kbId, pollFolderStatus]);
 
@@ -141,11 +127,11 @@ export function useFolderPolling({
   }, [kbId]);
 
   // Check if folder polling is still active
-  const isFolderPollingActive = Array.from(folderPollingStatus.values()).some(isActive => isActive);
+  const isFolderPollingActive = Array.from(folderPollingStatus.values()).some((isActive) => isActive);
 
   return {
     folderPollingStatus,
     isFolderPollingActive,
     pollFolderStatus,
   };
-} 
+}

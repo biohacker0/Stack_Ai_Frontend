@@ -52,7 +52,6 @@ export function hasStoredKB(): boolean {
 export function saveCacheToStorage(cacheData: CacheStorageData): void {
   try {
     localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cacheData));
-    console.log(`💾 [Cache] Saved cache to localStorage for KB: ${cacheData.kbId}`);
   } catch (error) {
     console.error("Failed to save cache to localStorage:", error);
   }
@@ -62,18 +61,16 @@ export function getCacheFromStorage(): CacheStorageData | null {
   try {
     const stored = localStorage.getItem(CACHE_STORAGE_KEY);
     const parsed = stored ? JSON.parse(stored) : null;
-    
+
     if (parsed) {
       // Check if cache is not too old (24 hours)
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours
       if (Date.now() - parsed.timestamp > maxAge) {
-        console.log("📅 [Cache] Cache expired, clearing");
         clearCacheFromStorage();
         return null;
       }
-      console.log(`📖 [Cache] Loaded cache from localStorage for KB: ${parsed.kbId}`);
     }
-    
+
     return parsed;
   } catch (error) {
     console.error("Failed to get cache from localStorage:", error);
@@ -84,7 +81,6 @@ export function getCacheFromStorage(): CacheStorageData | null {
 export function clearCacheFromStorage(): void {
   try {
     localStorage.removeItem(CACHE_STORAGE_KEY);
-    console.log("🗑️ [Cache] Cleared cache from localStorage");
   } catch (error) {
     console.error("Failed to clear cache from localStorage:", error);
   }
@@ -94,7 +90,7 @@ export function updateCacheInStorage(updater: (prev: CacheStorageData | null) =>
   try {
     const current = getCacheFromStorage();
     const updated = updater(current);
-    
+
     if (updated) {
       saveCacheToStorage(updated);
     } else {
@@ -103,4 +99,4 @@ export function updateCacheInStorage(updater: (prev: CacheStorageData | null) =>
   } catch (error) {
     console.error("Failed to update cache in localStorage:", error);
   }
-} 
+}

@@ -44,7 +44,7 @@ export function useOptimisticFolderRegistry() {
   const getFolderPathFromName = useCallback((name: string): string => {
     const pathParts = name.split("/");
     // If it ends with a filename, remove it; if it's a folder path, keep as is
-    if (pathParts[pathParts.length - 1].includes('.')) {
+    if (pathParts[pathParts.length - 1].includes(".")) {
       pathParts.pop(); // Remove filename
     }
     return "/" + pathParts.join("/");
@@ -53,18 +53,16 @@ export function useOptimisticFolderRegistry() {
   // Mark folders as optimistically indexed (called during KB creation)
   const markFoldersAsOptimisticallyIndexed = useCallback(
     (kbId: string, selectedFolderIds: string[], folderNameMap: Map<string, string>) => {
-      console.log(`🌳 [OptimisticFolderRegistry] Marking ${selectedFolderIds.length} folders for KB: ${kbId}`);
-      
       updateRegistryData((prev) => {
         const newEntries = { ...prev.entries };
         const timestamp = Date.now();
 
-        selectedFolderIds.forEach(folderId => {
+        selectedFolderIds.forEach((folderId) => {
           const folderName = folderNameMap.get(folderId);
           if (folderName) {
             const folderPath = getFolderPathFromName(folderName);
             const entryKey = `${kbId}-${folderId}`;
-            
+
             newEntries[entryKey] = {
               kbId,
               folderId,
@@ -72,8 +70,6 @@ export function useOptimisticFolderRegistry() {
               createdAt: timestamp,
               rootFolderIds: selectedFolderIds, // Store all selected folders
             };
-            
-            console.log(`📁 [OptimisticFolderRegistry] Registered folder: ${folderPath} (${folderId})`);
           }
         });
 
@@ -92,22 +88,21 @@ export function useOptimisticFolderRegistry() {
       if (!kbId || !targetFolderPath) return false;
 
       // Normalize the target path
-      const normalizedTarget = targetFolderPath.startsWith('/') ? targetFolderPath : `/${targetFolderPath}`;
-      
+      const normalizedTarget = targetFolderPath.startsWith("/") ? targetFolderPath : `/${targetFolderPath}`;
+
       // Check all registry entries for this KB
       const entries = Object.values(registryData.entries) as OptimisticFolderEntry[];
-      const kbEntries = entries.filter(entry => entry.kbId === kbId);
-      
+      const kbEntries = entries.filter((entry) => entry.kbId === kbId);
+
       for (const entry of kbEntries) {
         const registeredPath = entry.folderPath;
-        
+
         // Check if target path is a descendant of registered path
         if (normalizedTarget.startsWith(registeredPath + "/") || normalizedTarget === registeredPath) {
-          console.log(`🎯 [OptimisticFolderRegistry] Found ancestor: ${registeredPath} for ${normalizedTarget}`);
           return true;
         }
       }
-      
+
       return false;
     },
     [registryData.entries]
@@ -118,18 +113,18 @@ export function useOptimisticFolderRegistry() {
     (kbId: string, targetFolderPath: string): OptimisticFolderEntry | null => {
       if (!kbId || !targetFolderPath) return null;
 
-      const normalizedTarget = targetFolderPath.startsWith('/') ? targetFolderPath : `/${targetFolderPath}`;
-      
+      const normalizedTarget = targetFolderPath.startsWith("/") ? targetFolderPath : `/${targetFolderPath}`;
+
       const entries = Object.values(registryData.entries) as OptimisticFolderEntry[];
-      const kbEntries = entries.filter(entry => entry.kbId === kbId);
-      
+      const kbEntries = entries.filter((entry) => entry.kbId === kbId);
+
       // Find the closest ancestor (longest matching path)
       let bestMatch: OptimisticFolderEntry | null = null;
       let longestMatch = 0;
-      
+
       for (const entry of kbEntries) {
         const registeredPath = entry.folderPath;
-        
+
         if (normalizedTarget.startsWith(registeredPath + "/") || normalizedTarget === registeredPath) {
           if (registeredPath.length > longestMatch) {
             longestMatch = registeredPath.length;
@@ -137,7 +132,7 @@ export function useOptimisticFolderRegistry() {
           }
         }
       }
-      
+
       return bestMatch;
     },
     [registryData.entries]
@@ -156,13 +151,11 @@ export function useOptimisticFolderRegistry() {
   const removeOptimisticFolder = useCallback(
     (kbId: string, folderId: string) => {
       const entryKey = `${kbId}-${folderId}`;
-      
+
       updateRegistryData((prev) => {
         const newEntries = { ...prev.entries };
         delete newEntries[entryKey];
-        
-        console.log(`🗑️ [OptimisticFolderRegistry] Removed folder: ${entryKey}`);
-        
+
         return {
           entries: newEntries,
           lastUpdated: Date.now(),
@@ -177,16 +170,14 @@ export function useOptimisticFolderRegistry() {
     (kbId: string) => {
       updateRegistryData((prev) => {
         const newEntries = { ...prev.entries };
-        
+
         // Remove all entries for this KB
-        Object.keys(newEntries).forEach(entryKey => {
+        Object.keys(newEntries).forEach((entryKey) => {
           if (newEntries[entryKey].kbId === kbId) {
             delete newEntries[entryKey];
           }
         });
-        
-        console.log(`🧹 [OptimisticFolderRegistry] Cleared all folders for KB: ${kbId}`);
-        
+
         return {
           entries: newEntries,
           lastUpdated: Date.now(),
@@ -202,15 +193,13 @@ export function useOptimisticFolderRegistry() {
       entries: {},
       lastUpdated: Date.now(),
     }));
-    
-    console.log("🧹 [OptimisticFolderRegistry] Cleared entire registry");
   }, [updateRegistryData]);
 
   // Get all optimistic folders for debugging
   const getOptimisticFoldersForKB = useCallback(
     (kbId: string): OptimisticFolderEntry[] => {
       const entries = Object.values(registryData.entries) as OptimisticFolderEntry[];
-      return entries.filter(entry => entry.kbId === kbId);
+      return entries.filter((entry) => entry.kbId === kbId);
     },
     [registryData.entries]
   );
@@ -219,20 +208,20 @@ export function useOptimisticFolderRegistry() {
     // Registry data
     optimisticFolderEntries: registryData.entries,
     optimisticFolderCount: Object.keys(registryData.entries).length,
-    
+
     // Core functions
     markFoldersAsOptimisticallyIndexed,
     isDescendantOfOptimisticFolder,
     getOptimisticAncestorFolder,
     isFolderOptimisticallyIndexed,
-    
+
     // Management functions
     removeOptimisticFolder,
     clearOptimisticFoldersForKB,
     clearOptimisticFolderRegistry,
-    
+
     // Utility functions
     getOptimisticFoldersForKB,
     getFolderPathFromName,
   };
-} 
+}

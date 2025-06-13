@@ -19,7 +19,6 @@ export function useKBState() {
   useEffect(() => {
     if (currentKB?.id) {
       // Cache will be loaded by DataManager's useEffect
-      console.log(`📖 [KBOperations] KB restored from localStorage: ${currentKB.id}`);
     }
   }, [currentKB?.id]);
 
@@ -51,21 +50,21 @@ export function useKBState() {
     hasKB,
     indexedFolders,
     setIndexedFolders,
-    
+
     // Status polling
     statusMap,
     statusCounts,
     allFilesSettled,
     isPolling,
     shouldPoll,
-    
+
     // Deletion capabilities
     isActuallyDeleting,
     isFileDeleting,
     canDeleteFile,
     canDeleteFolder,
-    
+
     // Data manager (pass through all functions)
     ...dataManager,
   };
-} 
+}

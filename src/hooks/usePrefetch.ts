@@ -34,7 +34,7 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
     intersectionObserver.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          const folderId = entry.target.getAttribute('data-folder-id');
+          const folderId = entry.target.getAttribute("data-folder-id");
           if (!folderId) return;
 
           if (entry.isIntersecting) {
@@ -48,8 +48,8 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
       },
       {
         root: null,
-        rootMargin: '50px', // Start prefetching 50px before folder comes into view
-        threshold: 0.1
+        rootMargin: "50px", // Start prefetching 50px before folder comes into view
+        threshold: 0.1,
       }
     );
 
@@ -78,15 +78,14 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
     // Only process if still visible
     if (visibleFolders.current.has(folderId)) {
       activeRequestCount.current++;
-      
+
       const abortController = new AbortController();
-      
-      prefetchFolderContents(folderId, abortController.signal)
-        .finally(() => {
-          activeRequestCount.current--;
-          // Process next in queue
-          processQueue();
-        });
+
+      prefetchFolderContents(folderId, abortController.signal).finally(() => {
+        activeRequestCount.current--;
+        // Process next in queue
+        processQueue();
+      });
     } else {
       // If not visible anymore, continue with queue
       processQueue();
@@ -101,9 +100,9 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
       request.abortController.abort();
       activePrefetches.current.delete(folderId);
     }
-    
+
     // Remove from queue if present
-    requestQueue.current = requestQueue.current.filter(id => id !== folderId);
+    requestQueue.current = requestQueue.current.filter((id) => id !== folderId);
   }, []);
 
   // Get folder path from file list (same logic as useFileTree)
@@ -125,14 +124,13 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
 
         // If not cached, prefetch Google Drive contents
         if (!existingData && !abortSignal.aborted) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`🚀 Prefetching folder contents: ${folderId}`);
+          if (process.env.NODE_ENV === "development") {
           }
 
           await queryClient.prefetchQuery({
             queryKey: ["drive-files", folderId],
             queryFn: async () => {
-              if (abortSignal.aborted) throw new Error('Aborted');
+              if (abortSignal.aborted) throw new Error("Aborted");
               return listResources(folderId);
             },
             staleTime: 5 * 60 * 1000, // 5 minutes
@@ -141,23 +139,23 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
           // Get the cached result to extract folder path
           driveResult = queryClient.getQueryData<{ data: FileItem[] }>(["drive-files", folderId]);
         }
-        
+
         // If we have a KB, prefetch KB status (with throttling)
         if (kbId && driveResult?.data && driveResult.data.length > 0 && !abortSignal.aborted) {
           const folderPath = getFolderPath(driveResult.data);
-          
+
           // Check if KB status is already cached
           const existingKBStatus = queryClient.getQueryData(["kb-file-status", kbId, folderPath]);
-          
+
           if (!existingKBStatus) {
             // Use requestIdleCallback for non-critical KB status prefetch
-            if ('requestIdleCallback' in window) {
+            if ("requestIdleCallback" in window) {
               requestIdleCallback(() => {
                 if (!abortSignal.aborted) {
                   queryClient.prefetchQuery({
                     queryKey: ["kb-file-status", kbId, folderPath],
                     queryFn: async () => {
-                      if (abortSignal.aborted) throw new Error('Aborted');
+                      if (abortSignal.aborted) throw new Error("Aborted");
                       return listKBResourcesSafe(kbId, folderPath);
                     },
                     staleTime: 1 * 60 * 1000, // 1 minute for KB status
@@ -168,7 +166,7 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
           }
         }
       } catch (error: any) {
-        if (error.message !== 'Aborted' && process.env.NODE_ENV === 'development') {
+        if (error.message !== "Aborted" && process.env.NODE_ENV === "development") {
           console.error(`Prefetch failed for folder ${folderId}:`, error);
         }
       }
@@ -227,7 +225,7 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
     (element: HTMLElement | null, folderId: string) => {
       if (!element || !intersectionObserver.current) return;
 
-      element.setAttribute('data-folder-id', folderId);
+      element.setAttribute("data-folder-id", folderId);
       intersectionObserver.current.observe(element);
 
       // Return cleanup function
@@ -252,4 +250,4 @@ export function usePrefetch({ kbId, isEnabled = true, isCreatingKB = false }: Us
     isPrefetching,
     cancelPrefetch,
   };
-} 
+}

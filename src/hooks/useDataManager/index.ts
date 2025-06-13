@@ -11,10 +11,10 @@ import { DeleteRequest, OptimisticDeleteEntry } from "./types";
 
 /**
  * Centralized Data Manager
- * 
+ *
  * This hook provides a single source of truth for all application state:
  * 1. Sync State Management
- * 2. Delete Queue Management  
+ * 2. Delete Queue Management
  * 3. Optimistic Delete Registry
  * 4. File Status Resolution (with clear precedence)
  * 5. Cache Operations (Root + Folder)
@@ -22,12 +22,7 @@ import { DeleteRequest, OptimisticDeleteEntry } from "./types";
  */
 export function useDataManager() {
   // Import optimistic folder registry
-  const {
-    isDescendantOfOptimisticFolder,
-    getOptimisticAncestorFolder,
-    markFoldersAsOptimisticallyIndexed,
-    clearOptimisticFoldersForKB,
-  } = useOptimisticFolderRegistry();
+  const { isDescendantOfOptimisticFolder, getOptimisticAncestorFolder, markFoldersAsOptimisticallyIndexed, clearOptimisticFoldersForKB } = useOptimisticFolderRegistry();
 
   // Cache persistence
   const { persistCacheToStorage } = useCachePersistence();
@@ -39,33 +34,19 @@ export function useDataManager() {
   const { queueData, updateQueueData } = useDeleteQueue();
 
   // Optimistic registry
-  const { 
-    registryData, 
-    updateRegistryData, 
-    optimisticUpdateCounter, 
-    incrementOptimisticUpdateCounter, 
-    resolveFileStatus 
-  } = useOptimisticRegistry();
+  const { registryData, updateRegistryData, optimisticUpdateCounter, incrementOptimisticUpdateCounter, resolveFileStatus } = useOptimisticRegistry();
 
   // Cache operations
-  const {
-    updateKBResourcesCache,
-    removeFromKBResourcesCache,
-    updateFolderFileCache,
-    updateFolderStatusCache,
-    removeFromFolderStatusCache,
-    setFolderContentsAsIndexed,
-  } = useCacheOperations(incrementOptimisticUpdateCounter, persistCacheToStorage);
+  const { updateKBResourcesCache, removeFromKBResourcesCache, updateFolderFileCache, updateFolderStatusCache, removeFromFolderStatusCache, setFolderContentsAsIndexed } = useCacheOperations(
+    incrementOptimisticUpdateCounter,
+    persistCacheToStorage
+  );
 
   // Folder helpers
-  const {
-    getFolderPathFromFileName,
-    getFolderContents,
-    getAllDescendantFileIds,
-  } = useFolderHelpers();
+  const { getFolderPathFromFileName, getFolderContents, getAllDescendantFileIds } = useFolderHelpers();
 
   // ==================== COMPUTED VALUES ====================
-  
+
   const computedValues = useMemo(() => {
     const { state: syncState, kbId: syncKbId } = syncStateData;
     const { queue, processing } = queueData;
@@ -89,14 +70,14 @@ export function useDataManager() {
       // Registry state
       optimisticDeleteEntries: entries,
       optimisticDeleteCount: Object.keys(entries).length,
-      
+
       // Optimistic update tracking
       optimisticUpdateCount,
     };
   }, [syncStateData, queueData, registryData, optimisticUpdateCounter]);
 
   // ==================== PUBLIC API ====================
-  
+
   return {
     // State access
     ...computedValues,
@@ -123,14 +104,13 @@ export function useDataManager() {
         lastUpdated: Date.now(),
       }));
 
-      console.log(`📝 [DataManager] Queued: ${fileName}`);
       return deleteRequest.id;
     },
 
     removeFromQueue: (requestId: string) => {
       updateQueueData((prev) => ({
         ...prev,
-        queue: prev.queue.filter(req => req.id !== requestId),
+        queue: prev.queue.filter((req) => req.id !== requestId),
         lastUpdated: Date.now(),
       }));
     },
@@ -138,14 +118,9 @@ export function useDataManager() {
     updateQueueKBId: (oldKbId: string, newKbId: string) => {
       updateQueueData((prev) => ({
         ...prev,
-        queue: prev.queue.map(request => 
-          request.kbId === oldKbId 
-            ? { ...request, kbId: newKbId }
-            : request
-        ),
+        queue: prev.queue.map((request) => (request.kbId === oldKbId ? { ...request, kbId: newKbId } : request)),
         lastUpdated: Date.now(),
       }));
-      console.log(`🔄 [DataManager] Updated queue KB ID: ${oldKbId} → ${newKbId}`);
     },
 
     setQueueProcessing: (processing: boolean) => {
@@ -162,7 +137,6 @@ export function useDataManager() {
         processing: false,
         lastUpdated: Date.now(),
       }));
-      console.log("🧹 [DataManager] Queue cleared");
     },
 
     // Registry operations
@@ -181,8 +155,6 @@ export function useDataManager() {
         lastUpdated: Date.now(),
       }));
 
-      console.log(`🔒 [DataManager] Marked as deleted: ${fileName}`);
-      
       // Trigger re-render for optimistic deletes
       incrementOptimisticUpdateCounter();
     },
@@ -204,7 +176,6 @@ export function useDataManager() {
         entries: {},
         lastUpdated: Date.now(),
       }));
-      console.log("🧹 [DataManager] Registry cleared");
     },
 
     // Root cache operations (existing)
@@ -240,10 +211,9 @@ export function useDataManager() {
       updateQueueData(() => ({ queue: [], processing: false, lastUpdated: Date.now() }));
       updateRegistryData(() => ({ entries: {}, lastUpdated: Date.now() }));
       clearCacheFromStorage();
-      console.log("🧹 [DataManager] All state cleared");
     },
   };
 }
 
 // Re-export types for backward compatibility
-export type { DeleteRequest } from "./types"; 
+export type { DeleteRequest } from "./types";

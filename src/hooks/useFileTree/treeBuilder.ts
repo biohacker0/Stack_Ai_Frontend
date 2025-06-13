@@ -11,13 +11,7 @@ interface UseTreeBuilderProps {
   rootData?: { data: FileItem[] };
 }
 
-export function useTreeBuilder({
-  kbId,
-  expandedFolders,
-  loadingFolders,
-  refreshTrigger,
-  rootData,
-}: UseTreeBuilderProps) {
+export function useTreeBuilder({ kbId, expandedFolders, loadingFolders, refreshTrigger, rootData }: UseTreeBuilderProps) {
   const queryClient = useQueryClient();
   const { resolveFileStatus, getFolderPathFromFileName, optimisticUpdateCount } = useDataManager();
 
@@ -43,9 +37,8 @@ export function useTreeBuilder({
         const folderPath = level === 0 ? "/" : getFolderPathFromFileName(file.name);
         const resolved = resolveFileStatus(file.id, kbId || null, folderPath);
         const finalStatus: FileItem["status"] = resolved === "-" || resolved === null ? undefined : resolved;
-        
+
         if (level === 0) {
-          console.log(`Root file ${file.id} (${file.name}): resolved status: ${finalStatus || 'undefined'}`);
         }
 
         return {
@@ -91,4 +84,4 @@ export function useTreeBuilder({
     buildFileTree,
     flattenTree,
   };
-} 
+}

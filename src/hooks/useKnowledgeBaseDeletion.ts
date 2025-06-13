@@ -20,18 +20,15 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
           setDeletingFiles((prev) => new Set(prev).add(file.id));
 
           const response = await deleteKBResource(kbId!, file.name);
-          
+
           // Check if deletion was successful based on response format
-          const isSuccess = response && 
-            (response.success === true || 
-             (typeof response === 'object' && response.message === "Resource deleted"));
+          const isSuccess = response && (response.success === true || (typeof response === "object" && response.message === "Resource deleted"));
 
           if (isSuccess) {
-            console.log(`Successfully deleted: ${file.name}`);
             results.push({ file, success: true });
           } else {
             console.error(`Deletion failed for ${file.name}:`, response);
-            results.push({ file, success: false, error: 'Deletion failed' });
+            results.push({ file, success: false, error: "Deletion failed" });
           }
         } catch (error) {
           console.error(`Error deleting ${file.name}:`, error);
@@ -51,21 +48,17 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
       const successCount = results.filter((r) => r.success).length;
       const totalCount = results.length;
 
-      console.log(`Deletion complete: ${successCount}/${totalCount} files deleted successfully`);
-
       // STEP 1: Immediately invalidate and remove all KB-related queries
       queryClient.removeQueries({ queryKey: ["kb-resources"] });
       queryClient.removeQueries({ queryKey: ["kb-file-status"] });
 
-      // STEP 2: Remove all cached drive files 
+      // STEP 2: Remove all cached drive files
       queryClient.removeQueries({ queryKey: ["drive-files"] });
 
       // STEP 3: Wait a moment for backend to process, then refetch KB resources
       if (kbId) {
-        console.log("Waiting for backend to process deletion...");
-        await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms
-        
-        console.log("Refetching KB resources after deletion...");
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Wait 500ms
+
         await queryClient.fetchQuery({
           queryKey: ["kb-resources", kbId],
           queryFn: () => listKBResources(kbId),
@@ -74,7 +67,7 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
       }
 
       // STEP 4: Finally refetch root drive files
-      console.log("Refetching root drive files...");
+
       await queryClient.fetchQuery({
         queryKey: ["drive-files", "root"],
         queryFn: () => listResources(),
@@ -85,7 +78,6 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
 
       // Show success message if any files were deleted
       if (successCount > 0) {
-        console.log(`${successCount} file(s) deleted successfully`);
       }
 
       // Show error message if any deletions failed
@@ -131,7 +123,7 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
           // Folder selection - find all indexed files inside
           const indexedFilesInFolder = allFiles.filter((file) => {
             if (file.type !== "file" || !file.name.startsWith(item.name + "/")) return false;
-            
+
             const actualStatus = statusMap?.get(file.id) || file.status;
             return actualStatus === "indexed";
           });
@@ -140,16 +132,13 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
       });
 
       // Remove duplicates
-      const uniqueFiles = filesToDelete.filter((file, index, arr) => 
-        arr.findIndex((f) => f.id === file.id) === index
-      );
+      const uniqueFiles = filesToDelete.filter((file, index, arr) => arr.findIndex((f) => f.id === file.id) === index);
 
       if (uniqueFiles.length === 0) {
         console.warn("No indexed files selected for deletion");
         return;
       }
 
-      console.log(`Starting deletion of ${uniqueFiles.length} files`);
       setIsDeleting(true);
       deleteFilesMutation.mutate(uniqueFiles);
     },
@@ -165,26 +154,32 @@ export function useKnowledgeBaseDeletion(kbId: string | null, statusMap?: Map<st
   );
 
   // Check if a file can be deleted (indexed status)
-  const canDeleteFile = useCallback((file: FileItem) => {
-    if (file.type !== "file") return false;
-    
-    // Use statusMap if available (shows actual UI status), otherwise fall back to file.status
-    const actualStatus = statusMap?.get(file.id) || file.status;
-    return actualStatus === "indexed";
-  }, [statusMap]);
+  const canDeleteFile = useCallback(
+    (file: FileItem) => {
+      if (file.type !== "file") return false;
 
-  // Check if a folder has any deletable files
-  const canDeleteFolder = useCallback((folder: FileItem, allFiles: FileItem[]) => {
-    if (folder.type !== "directory") return false;
-
-    return allFiles.some((file) => {
-      if (file.type !== "file" || !file.name.startsWith(folder.name + "/")) return false;
-      
       // Use statusMap if available (shows actual UI status), otherwise fall back to file.status
       const actualStatus = statusMap?.get(file.id) || file.status;
       return actualStatus === "indexed";
-    });
-  }, [statusMap]);
+    },
+    [statusMap]
+  );
+
+  // Check if a folder has any deletable files
+  const canDeleteFolder = useCallback(
+    (folder: FileItem, allFiles: FileItem[]) => {
+      if (folder.type !== "directory") return false;
+
+      return allFiles.some((file) => {
+        if (file.type !== "file" || !file.name.startsWith(folder.name + "/")) return false;
+
+        // Use statusMap if available (shows actual UI status), otherwise fall back to file.status
+        const actualStatus = statusMap?.get(file.id) || file.status;
+        return actualStatus === "indexed";
+      });
+    },
+    [statusMap]
+  );
 
   return {
     isDeleting,

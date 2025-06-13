@@ -1,14 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { 
-  getCacheFromStorage, 
-  saveCacheToStorage, 
-  type CacheStorageData 
-} from "@/lib/utils/localStorage";
-import { 
-  OPTIMISTIC_DELETE_REGISTRY_KEY,
-  OptimisticDeleteRegistryData 
-} from "./types";
+import { getCacheFromStorage, saveCacheToStorage, type CacheStorageData } from "@/lib/utils/localStorage";
+import { OPTIMISTIC_DELETE_REGISTRY_KEY, OptimisticDeleteRegistryData } from "./types";
 
 export function useCachePersistence() {
   const queryClient = useQueryClient();
@@ -18,18 +11,14 @@ export function useCachePersistence() {
     const storedCache = getCacheFromStorage();
     if (!storedCache) return;
 
-    console.log("📖 [DataManager] Restoring cache from localStorage");
-
     // Restore root resources cache
     if (storedCache.rootResources) {
       queryClient.setQueryData(["kb-resources", storedCache.kbId], storedCache.rootResources);
-      console.log(`📖 [Cache] Restored root resources for KB: ${storedCache.kbId}`);
     }
 
     // Restore folder status caches
     Object.entries(storedCache.folderStatuses).forEach(([folderPath, folderData]) => {
       queryClient.setQueryData(["kb-file-status", storedCache.kbId, folderPath], folderData);
-      console.log(`📖 [Cache] Restored folder status: ${folderPath}`);
     });
 
     // Restore optimistic registry
@@ -38,7 +27,6 @@ export function useCachePersistence() {
         entries: storedCache.optimisticRegistry,
         lastUpdated: Date.now(),
       });
-      console.log("📖 [Cache] Restored optimistic delete registry");
     }
 
     // Restore optimistic folder registry
@@ -47,7 +35,6 @@ export function useCachePersistence() {
         entries: storedCache.optimisticFolderRegistry,
         lastUpdated: Date.now(),
       });
-      console.log("📖 [Cache] Restored optimistic folder registry");
     }
   }, [queryClient]);
 
@@ -63,7 +50,7 @@ export function useCachePersistence() {
         // Collect all folder status caches for this KB
         const folderStatuses: Record<string, { data: any[] }> = {};
         const queryCache = queryClient.getQueryCache();
-        
+
         queryCache.getAll().forEach((query) => {
           if (query.queryKey[0] === "kb-file-status" && query.queryKey[1] === kbId) {
             const folderPath = query.queryKey[2] as string;
@@ -95,4 +82,4 @@ export function useCachePersistence() {
   return {
     persistCacheToStorage,
   };
-} 
+}
